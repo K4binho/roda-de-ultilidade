@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.log
+
+work/
+*.zip
+SHA256.txt
+docs/*
+!docs/.gitkeep
+.codex-remote-attachments/

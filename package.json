@@ -1,0 +1,57 @@
+{
+  "name": "k4-wheel",
+  "version": "0.7.0",
+  "description": "Menu radial de atalhos para Windows",
+  "author": "K4",
+  "license": "MIT",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "pack": "electron-builder --win --dir",
+    "dist": "electron-builder --win nsis portable",
+    "test:runtime": "electron test/runtime.cjs",
+    "test:steam": "electron test/steam-runtime.cjs",
+    "test:appearance": "electron test/appearance-runtime.cjs",
+    "test:hotkey": "electron test/hotkey-runtime.cjs",
+    "build:mouse": "node scripts/build-mouse-hook.js",
+    "prestart": "node scripts/build-mouse-hook.js",
+    "predist": "node scripts/build-mouse-hook.js"
+  },
+  "devDependencies": {
+    "electron": "45.0.0",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.k4.wheel",
+    "productName": "Roda de ultilidade",
+    "asar": true,
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "signExecutable": false,
+      "icon": "src/assets/k4-wheel.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Roda-de-ultilidade-Instalador-${version}-${arch}.${ext}"
+    },
+    "artifactName": "Roda-de-ultilidade-${version}-${arch}.${ext}",
+    "portable": {
+      "artifactName": "Roda-de-ultilidade-Portatil-${version}-${arch}.${ext}"
+    },
+    "asarUnpack": [
+      "src/native/*.exe"
+    ]
+  }
+}
