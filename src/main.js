@@ -4,6 +4,7 @@ const fs=require('node:fs');
 const {spawn}=require('node:child_process');
 const {pathToFileURL}=require('node:url');
 const {defaults,validate,save}=require('./config');
+const {isTrustedK4BotAction}=require('./k4bot-actions');
 const {detectSteamRoot,scanSteam,launchSteamGame}=require('./steam');
 const middleMouse=require('./middle-mouse');
 const outsideClick=require('./outside-click');
@@ -12,12 +13,18 @@ app.on('before-quit',()=>outsideClick.stop());
 let wheel,settings,tray,config,file;
 let hideTimer,closingWheel=false;
 let hotkeyCapture=false,hotkeyCaptureTimer;
-let steamSnapshot,steamRefresh,lastSteamScan=0;
+let steamSnapshot,steamRefresh;
 async function getSteam(force=false) {
- if(steamRefresh)return steamRefresh;
- if(!force && steamSnapshot && Date.now()-lastSteamScan<30000)return steamSnapshot;
- steamRefresh=(async()=>{const root=await detectSteamRoot(config.steamPath || '');steamSnapshot=await scanSteam(root);lastSteamScan=Date.now();return steamSnapshot;})();
- try{return await steamRefresh;}finally{steamRefresh=null;}
+ const steamPath=config.steamPath||'';
+ if(steamRefresh?.path===steamPath)return steamRefresh.promise;
+ if(!force&&steamSnapshot?.path===steamPath)return steamSnapshot.result;
+ const promise=(async()=>{
+  const root=await detectSteamRoot(steamPath),result=await scanSteam(root);
+  if((config.steamPath||'')===steamPath)steamSnapshot={path:steamPath,result};
+  return result;
+ })();
+ steamRefresh={path:steamPath,promise};
+ try{return await promise;}finally{if(steamRefresh?.promise===promise)steamRefresh=undefined;}
 }
 const smoke=process.argv.includes('--smoke-test');
 if(smoke) app.setPath('userData',path.join(app.getPath('temp'),'k4-wheel-smoke'));
@@ -61,6 +68,8 @@ function handle(name,fn){ipcMain.handle(name,async(e,...args)=>{if(!trusted(e))t
 app.whenReady().then(async()=>{
  file=path.join(app.getPath('userData'),'config.json');
  try{config=fs.existsSync(file)?validate(JSON.parse(fs.readFileSync(file,'utf8'))):defaults();}catch(err){dialog.showErrorBox('Configuração não carregada',`O arquivo original foi preservado em ${file}.\n${err.message}\nPadrão carregado apenas na memória.`);config=defaults();}
+ try{startup.sync();}catch(err){console.warn('Não foi possível atualizar o atalho de inicialização:',err.message);}
+ void getSteam().catch(err=>console.warn('Leitura inicial da biblioteca Steam:',err.message));
  session.defaultSession.setPermissionRequestHandler((_w,_p,cb)=>cb(false));
  wheel=makeWindow('wheel.html',{width:700,height:700,show:false,frame:false,transparent:true,resizable:false,skipTaskbar:true,alwaysOnTop:true,hasShadow:false});
  wheel.on('blur',hideWheel);
@@ -92,7 +101,7 @@ app.whenReady().then(async()=>{
   if(clean.hotkey!==old&&!await register(clean.hotkey))throw Error('Atalho ocupado ou inválido. O anterior foi mantido.');
   try{if(newStartup!==oldStartup)startup.set(newStartup);save(file,clean);}catch(err){if(clean.hotkey!==old)await unregister(clean.hotkey);if(startup.get()!==oldStartup)startup.set(oldStartup);throw err;}
   if(clean.hotkey!==old)await unregister(old);
-  if(clean.steamPath!==config.steamPath)lastSteamScan=0;
+  if(clean.steamPath!==config.steamPath)steamSnapshot=undefined;
   config=clean;wheel.webContents.send('config-changed',config);return config;
  });
  handle('pick',async(e,type)=>{if(e.sender!==settings?.webContents)throw Error('Origem inválida.');const r=await dialog.showOpenDialog(settings,{properties:[type==='folder'?'openDirectory':'openFile'],...(type==='folder'?{}:{filters:[{name:'Programas Windows',extensions:['exe']}]})});return r.canceled?null:r.filePaths[0];});
@@ -104,7 +113,7 @@ app.whenReady().then(async()=>{
   if(item.type==='folder'){if(!stat.isDirectory())throw Error('Escolha uma pasta.');const err=await shell.openPath(item.target);if(err)throw Error(err);return;}
   if(!stat.isFile())throw Error('Programa não encontrado.');
   const interpreters=['cmd.exe','powershell.exe','pwsh.exe','wscript.exe','cscript.exe','mshta.exe'];
-  if(item.type==='command'||interpreters.includes(path.basename(item.target).toLowerCase())){
+  if((item.type==='command'||interpreters.includes(path.basename(item.target).toLowerCase()))&&!isTrustedK4BotAction(item)){
     const result=await dialog.showMessageBox({type:'warning',buttons:['Cancelar','Executar'],defaultId:0,cancelId:0,title:'Executar comando?',message:item.name,detail:JSON.stringify([item.target,...item.args])});if(result.response!==1)return;
   }
   await new Promise((resolve,reject)=>{const child=spawn(item.target,item.args,{cwd:item.type==='exe'?path.dirname(item.target):undefined,shell:false,detached:true,stdio:'ignore',windowsHide:false});child.once('error',reject);child.once('spawn',()=>{child.unref();resolve();});});

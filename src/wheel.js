@@ -47,7 +47,7 @@ function render(){
  const categories=[...config.categories,{id:STEAM,name:'Steam',color:'#66c0f4',items:steam.games}];
  const cat=categories.find(c=>c.id===active),isSteam=active===STEAM;
  toolbar.hidden=!isSteam;document.querySelector('.hint').hidden=isSteam;
- categories.forEach((c,i)=>segment(c,i,categories.length,91,197,'category'+(c===cat?' selected':''),()=>{active=c.id;page=0;document.querySelector('#status').textContent='';render();if(c.id===STEAM)loadSteam(true);}));
+ categories.forEach((c,i)=>segment(c,i,categories.length,91,197,'category'+(c===cat?' selected':''),()=>{active=c.id;page=0;document.querySelector('#status').textContent='';render();if(c.id===STEAM)loadSteam();}));
  if(cat){
   let items=cat.items;
   if(isSteam){
@@ -66,7 +66,7 @@ function render(){
  }else el('text',{x:350,y:105,class:'empty'},svg).textContent='Escolha uma categoria';
 }
 window.k4.call('get-config').then(c=>{config=c;active=c.categories[0].id;render();}).catch(error);
-window.k4.onConfig(c=>{config=c;if(active!==STEAM&&!c.categories.some(x=>x.id===active))active=c.categories[0].id;document.querySelector('#status').textContent='';render();if(active===STEAM)loadSteam(true);});
+window.k4.onConfig(c=>{config=c;if(active!==STEAM&&!c.categories.some(x=>x.id===active))active=c.categories[0].id;document.querySelector('#status').textContent='';render();if(active===STEAM)loadSteam();});
 document.querySelector('#center').onclick=()=>{active=null;render();};document.querySelector('#settings').onclick=()=>window.k4.call('settings');document.onkeydown=e=>{if(e.key==='Escape')window.k4.call('hide');};
 window.addEventListener('resize',render);
 window.k4.onVisibility(visible=>{

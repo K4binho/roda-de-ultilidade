@@ -1,6 +1,6 @@
 {
   "name": "k4-wheel",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Menu radial de atalhos para Windows",
   "author": "K4",
   "license": "MIT",
@@ -31,7 +31,7 @@
       "package.json"
     ],
     "directories": {
-      "output": "dist"
+      "output": "dist/current"
     },
     "win": {
       "target": [

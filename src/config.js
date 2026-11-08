@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const {normalize:normalizeHotkey}=require('./hotkey');
+const {isTrustedK4BotAction,isK4BotActionId}=require('./k4bot-actions');
 const colors = ['#48a8ff','#bd7aff','#ff718d','#ffb85c','#e4dc63','#58dca1'];
 function defaults() {
   return {version:1, hotkey:'Ctrl+Alt+Space', steamPath:'', wheelSize:'large', categories:[
@@ -29,6 +30,7 @@ function validate(c) {
       if(item.type==='url') {const u=new URL(item.target); if(!['https:','http:'].includes(u.protocol)||u.username||u.password) throw Error('Use URL HTTP ou HTTPS sem credenciais.');}
       else if(!path.isAbsolute(item.target)) throw Error('Escolha um caminho absoluto.');
       if(['exe','command'].includes(item.type) && path.extname(item.target).toLowerCase()!=='.exe') throw Error('Programas precisam ser arquivos .exe.');
+      if(isK4BotActionId(item.id)&&!isTrustedK4BotAction(item))throw Error('Ação reservada do K4Bot inválida.');
     }
   }
   return {...JSON.parse(JSON.stringify(c)),hotkey};

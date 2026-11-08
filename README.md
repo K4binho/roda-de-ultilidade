@@ -21,6 +21,8 @@ npm test
 npm run dist
 ```
 
-O último comando gera o instalador e o portátil em dist. Os atalhos pessoais são gravados no perfil local do Windows. O projeto mantém o identificador interno das versões anteriores para compatibilidade.
+O último comando gera o instalador e o portátil em `dist/current`. Essa pasta é reutilizada a cada versão para manter estável o destino de inicialização do Windows. Com a inicialização ativada, o Windows abre o executável dessa pasta; ao instalar uma versão mais nova, o atalho é atualizado para o executável atual. Os atalhos pessoais são gravados no perfil local do Windows. O projeto mantém o identificador interno das versões anteriores para compatibilidade.
+
+A biblioteca Steam é lida uma vez quando o app inicia. Trocar de aba usa o resultado em memória; **Atualizar** faz uma nova leitura manual.
 
 Licença MIT.
